@@ -53,7 +53,7 @@ php artisan key:generate
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=103_rent
+DB_DATABASE=db-trains
 DB_USERNAME=root
 DB_PASSWORD=root
 ```
@@ -63,31 +63,30 @@ DB_PASSWORD=root
 Per creare una tabella lanciare il comando
 
 ```
-php artisan make:migration create_houses_table
+php artisan make:migration create_trains_table
 ```
 
 Aggiungi poi tutte le colonne che rappresentano la tabella nella funzione `up()`. I tipi di dato disponibili sono [qui](https://laravel.com/docs/9.x/migrations#available-column-types)
 
 ```php
-// create_houses_table
+// create_trains_table
 
 public function up()
-  {
-    Schema::create('houses', function (Blueprint $table) {
-      $table->id();
-      $table->tinyInteger('rooms')->unsigned();
-      $table->tinyInteger('bathrooms')->unsigned();
-      $table->smallInteger('square_meters')->unsigned();
-      $table->enum('type', ['appartment', 'independent', 'villa']);
-      $table->string('address', 100);
-      $table->string('city', 50);
-      $table->string('state', 50);
-      $table->string('zipcode', 15);
-      $table->text('description');
-      $table->float('price', 5, 2);
-      $table->timestamps();
-    });
-  }
+    {
+        Schema::create('trains', function (Blueprint $table) {
+            $table->id();
+            $table->string('company_name', 50);
+            $table->string('departure_station', 30);
+            $table->string('arrival_station', 30);
+            $table->dateTime('departure_time');
+            $table->dateTime('arrival_time');
+            $table->integer('train_code');
+            $table->tinyInteger('number_of_carriages');
+            $table->boolean('in_time');
+            $table->boolean('deleted');
+            $table->timestamps();
+        });
+    }
 ```
 
 Eseguo la migrazione appena creata con il comando
@@ -105,15 +104,15 @@ Aggiungo un paio di righe da [PHPMyAdmin](http://localhost/phpMyAdmin/?lang=en) 
 Creo un Model che rappresenti la tabella appena realizzata con il comando
 
 ```
-php artisan make:model House
+php artisan make:model Train
 ```
 
 ## Creazione di un Controller per la risorsa
 
-Creo un Controller per la risorsa `House` con il comando
+Creo un Controller per la risorsa `Train` con il comando
 
 ```
-php artisan make:controller HouseController
+php artisan make:controller TrainController
 ```
 
 Importo il controller nel file `routes/web.php` per assegnargli delle rotte
@@ -121,39 +120,39 @@ Importo il controller nel file `routes/web.php` per assegnargli delle rotte
 ```php
 // web.php
 
-use App\Http\Controllers\HouseController;
+use App\Http\Controllers\TrainController;
 
 // ...
 
-// # Rotte risorsa house
-Route::get('/house', [HouseController::class, 'index'])->name('house.index');
+// # Rotte risorsa train
+Route::get('/train', [TrainController::class, 'index'])->name('train.index');
 ```
 
-Realizzo una funzione contenente la logica del metodo legato in `routes/web.php` dentro il controller `HouseController.php`. Dovremo
+Realizzo una funzione contenente la logica del metodo legato in `routes/web.php` dentro il controller `TrainController.php`. Dovremo
 
-1. importare il modello `House`
+1. importare il modello `Train`
 2. nel metodo `index()` recuperare tutte gli elementi della tabella e passarli ad una vista
 
 ```php
-// HouseController.php
+// TrainController.php
 
-use App\Models\House;
+use App\Models\Train;
 
 // ...
 
-class HouseController extends Controller
+class TrainController extends Controller
 {
   public function index()
   {
-    $houses = House::all();
-    return view('house.index', compact('houses'));
+    $trains = Train::all();
+    return view('train.index', compact('trains'));
   }
 }
 ```
 
 ## Creazione di una vista per visualizzare i dati
 
-creo un file `resources\views\house\index.blade.php` e estendo il layout `app.blade.php`.
+creo un file `resources\views\train\index.blade.php` e estendo il layout `app.blade.php`.
 In un forelse stamperò tutti i dati ricevuti
 
 ```php
@@ -162,17 +161,53 @@ In un forelse stamperò tutti i dati ricevuti
 @section('main-content')
   <section class="container mt-5">
 
-    @forelse($houses as $house)
-      <p>
-        <strong>Type</strong>: {{ $house->type }} <br>
-        <strong>Rooms</strong>: {{ $house->rooms }} <br>
-        <strong>Bathrooms</strong>: {{ $house->bathrooms }}
-      </p>
-      <hr>
-    @empty
-      <h2>Non ci sono risultati</h2>
-    @endforelse
-  </section>
+   @forelse ($trains as $train)
+            <ul class="list-group my-5">
+
+                <li class="list-group-item">
+                    <h5>Compagnia: </h5>{{ $train->company_name }}
+                </li>
+
+                <li class="list-group-item">
+                    <h5>Orario di Partenza: </h5>{{ $train->departure_time }}
+                </li>
+
+                <li class="list-group-item">
+                    <h5>Orario di Arrivo: </h5>{{ $train->arrival_time }}
+                </li>
+
+                <li class="list-group-item">
+                    <h5>Luogo di Partenza: </h5>{{ $train->departure_station }}
+                </li>
+
+                <li class="list-group-item">
+                    <h5>Luogo di Arrivo: </h5>{{ $train->arrival_station }}
+                </li>
+
+                <li class="list-group-item">
+                    <h5>Numero treno: </h5> {{ $train->train_code }}
+                </li>
+
+            </ul>
+        @empty
+            <h4>Non ci sono treni</h4>
+        @endforelse
 @endsection
+
+```
+
+## Creazione di una query per visualizzare i treni nella data odierna
+
+Vado in TrainController e faccio la query con whereDate che prende solo Y-M-D per visualizzare solo i treni della data odienrna
+
+```php
+
+public function index()
+    {
+        $trains = Train::
+            whereDate('departure_time', '=', '2023-10-16')->get();
+
+        return view('train.index', compact('trains'));
+    }
 
 ```
