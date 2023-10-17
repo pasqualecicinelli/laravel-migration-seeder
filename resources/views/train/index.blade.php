@@ -6,6 +6,11 @@
         @forelse ($trains as $train)
             <ul class="list-group my-5">
 
+
+                <li class="list-group-item">
+                    <h5>Numero Id: {{ $train->id }}</h5>
+                </li>
+
                 <li class="list-group-item">
                     <h5>Compagnia: </h5>{{ $train->company_name }}
                 </li>

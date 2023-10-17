@@ -205,9 +205,52 @@ Vado in TrainController e faccio la query con whereDate che prende solo Y-M-D pe
 public function index()
     {
         $trains = Train::
-            whereDate('departure_time', '=', '2023-10-16')->get();
+            whereDate('departure_time', '=', '2023-10-17')->get();
 
         return view('train.index', compact('trains'));
     }
 
+```
+
+## Creazione di Faker dati attraverso Seeders
+
+Creo seeders con il nome della tabella davanti al plurale in PascalCase dando il comando
+
+```php
+
+php artisan make:seeder TrainsTableseeder
+```
+
+## Aggiungo lo use di Faker, stessa cosa alla funzione, faccio un ciclo per generare 10 righe di dati fake e alla fine aggiungiamo la funzione save();
+
+```php
+
+//Vado in TrainsTableSeeder.php
+
+use Faker\Generator as Faker;
+
+public function run(Faker $faker)
+{
+        for ($i = 0; $i < 10; $i++) {
+
+            $train = new Train();
+
+            $train->company_name = $faker->company();
+            $train->departure_station = $faker->city();
+            $train->arrival_station = $faker->city();
+
+            /*  Genera per 'departure_time' una faker data e un orario compreso dal giorno prima al giorno Attuale
+                Genera per 'arrival_time' una faker data e un orario del giorno Attuale */
+
+            $train->departure_time = $faker->dateTimeBetween('-1 day', '+1 day');
+            $train->arrival_time = $faker->dateTimeBetween('+1 day', '+1 day');
+            $train->train_code = $faker->randomNumber(5, true);
+            $train->number_of_carriages = $faker->randomNumber(1, true);
+            $train->in_time = $faker->boolean();
+            $train->deleted = $faker->boolean();
+
+            $train->save();
+        }
+
+    }
 ```
